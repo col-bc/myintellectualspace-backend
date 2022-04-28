@@ -8,14 +8,14 @@ This is the backend api for the myintellectualspace-frontend repository.
 ### How to run this application
 1. Install the dependencies
 2. clone this repo and `cd` into it
-3. Spawn the virtual environment 
-Linux: 
+3. Spawn the virtual environment
+Linux:
 ```
-source /path-to-project/bin/activate
+source /path-to-project/venv/bin/activate
 ```
 Windows
 ```
-\path-to-project\bin\activate
+\path-to-project\venv\bin\activate
 ```
 4. With the virtual environment active, set the following environment variables
 Linux:
