@@ -1,9 +1,11 @@
 from datetime import datetime
+from flask_cors import CORS
 from flask import Blueprint, request, Response, g
 import json
 from database import db, UserAccount
 
 auth_ep = Blueprint('auth_ep', __name__, url_prefix='/api/auth')
+CORS(auth_ep)
 
 
 @auth_ep.route('/register', methods=['POST'])

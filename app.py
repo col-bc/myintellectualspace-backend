@@ -4,6 +4,7 @@ from database import db
 from flask import Flask
 
 from flask_cors import CORS
+from flask_migrate import Migrate
 
 from endpoints.AuthEndpoint import auth_ep
 from endpoints.UserEndpoint import user_ep
@@ -23,7 +24,11 @@ def register_extensions(app):
     db.init_app(app)
     cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
     cors.init_app(app)
-
+    migrate = Migrate(app, db)
+    
+def setup_migrate(app, db):
+    migrate = Migrate(app, db)
+    return migrate
 
 def register_blueprints(app):
     app.register_blueprint(auth_ep)
@@ -32,11 +37,12 @@ def register_blueprints(app):
 
 def setup_database(app):
     with app.app_context():
-        print('[+] Creating database tables...') 
+        print('[+] Creating database tables...')
         db.create_all()
 
 
 if __name__ == '__main__':
     app = create_app()
     setup_database(app)
+    migrate = setup_migrate(app, db)
     app.run()
