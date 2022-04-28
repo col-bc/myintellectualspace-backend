@@ -10,9 +10,13 @@ This is the backend api for the myintellectualspace-frontend repository.
 2. clone this repo and `cd` into it
 3. Spawn the virtual environment 
 Linux: 
-```$ source /path-to-project/bin/activate```
+```
+source /path-to-project/bin/activate
+```
 Windows
-```$ \path-to-project\bin\activate```
+```
+\path-to-project\bin\activate
+```
 4. With the virtual environment active, set the following environment variables
 Linux:
 ```
