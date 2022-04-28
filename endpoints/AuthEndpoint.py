@@ -1,13 +1,12 @@
 from datetime import datetime
-from flask import Blueprint, request, Response
+from flask import Blueprint, request, Response, g
 import json
-from models.UserAccountModel import UserAccount
-from app import db
+from database import db, UserAccount
 
-user_ep = Blueprint('user_ep', __name__, url_prefix='/api/user')
+auth_ep = Blueprint('auth_ep', __name__, url_prefix='/api/auth')
 
 
-@user_ep.route('/register', methods=['POST'])
+@auth_ep.route('/register', methods=['POST'])
 def register():
     '''
     `/api/user/register`
@@ -71,10 +70,10 @@ def register():
     )
 
 
-@user_ep.route('/login', methods=['POST'])
+@auth_ep.route('/login', methods=['POST'])
 def login():
     '''
-    /api/user/login
+    `/api/auth/login`
     Verifies payload credentials against database and returns token if valid
     '''
     if request.method != 'POST':
@@ -129,3 +128,11 @@ def login():
         status=200,
         mimetype='application/json'
     )
+
+
+def get_user_by_token(token) -> UserAccount:
+    user = UserAccount.query.filter_by(auth_token=token).first()
+    if user.check_token(token):
+        return user
+    else:
+        return None
