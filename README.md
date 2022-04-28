@@ -28,4 +28,4 @@ Windows
 set FLASK_APP=app.py
 set FLASK_ENV=development
 ```
-5. Run the application on port 5000 with `flask run --port 5000`
+5. Run the application on port 5000 with `python3 app.py`
