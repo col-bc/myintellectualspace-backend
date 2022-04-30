@@ -1,2 +1,3 @@
-export FLASK_APP=app.py
-export FLASK_ENV=development
+source ./venv/bin/activate
+
+python3 app.py

@@ -1,11 +1,8 @@
-import os
-
-from database import db
 from flask import Flask
-
 from flask_cors import CORS
 from flask_migrate import Migrate
 
+from database import db
 from endpoints.AuthEndpoint import auth_ep
 from endpoints.UserEndpoint import user_ep
 
@@ -25,10 +22,12 @@ def register_extensions(app):
     cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
     cors.init_app(app)
     migrate = Migrate(app, db)
-    
+
+
 def setup_migrate(app, db):
     migrate = Migrate(app, db)
     return migrate
+
 
 def register_blueprints(app):
     app.register_blueprint(auth_ep)
