@@ -16,6 +16,7 @@ class UserAccount(db.Model):
     password_hash = db.Column(db.String(120), nullable=False)
     auth_token = db.Column(db.String(120), unique=True, nullable=True)
     token_expiration = db.Column(db.DateTime, nullable=True)
+    location = db.Column(db.String(50), nullable=True)
 
     bio = db.Column(db.String(500), nullable=True)
     website = db.Column(db.String(120), nullable=True)
@@ -76,7 +77,8 @@ class UserAccount(db.Model):
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
             "auth_token": self.auth_token,
             "token_expiration": self.token_expiration.strftime("%Y-%m-%d %H:%M:%S"),
-            "occupation": self.occupation
+            "occupation": self.occupation,
+            "location": self.location,
         }
 
     def update(self, data: dict):

@@ -137,6 +137,10 @@ def login():
 
 def get_user_by_token(token) -> UserAccount:
     user = UserAccount.query.filter_by(auth_token=token).first()
+    print(token)
+    if not user:
+        print('[!] Invalid token')
+        return None
     if user.check_token(token):
         print(
             f'[+] Access granted via token: {user} <Token ...{token[-5:]}>')

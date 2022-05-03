@@ -102,39 +102,3 @@ def delete_user():
                     status=200,
                     mimetype='application/json')
 
-
-@user_ep.route("/tasks", methods=["GET"])
-def get_outstanding_tasks():
-    if request.method != 'GET':
-        return Response(status=405)
-
-    if g.user is None:
-        return Response(status=401)
-
-    if g.user.account_type != 'admin':
-        return Response(response=json.dumps({'error': 'Not authorized'}),
-                        status=401,
-                        mimetype='application/json')
-
-    tasks = ['interests', 'bio', 'friends', 'posts', 'comments', 'likes']
-    outstanding_tasks = []
-    if g.user.interests is None:
-        outstanding_tasks.append('interests')
-    if g.user.bio is None:
-        outstanding_tasks.append('bio')
-    if g.user.friend_its is None:
-        outstanding_tasks.append('friends')
-    if g.user.post_ids is None:
-        outstanding_tasks.append('posts')
-    if g.user.comment_ids is None:
-        outstanding_tasks.append('comments')
-    if g.user.like_ids is None:
-        outstanding_tasks.append('likes')
-    if outstanding_tasks:
-        return Response(response=json.dumps({'outstanding_tasks': outstanding_tasks}),
-                        status=200,
-                        mimetype='application/json')
-    else:
-        return Response(response=json.dumps({'outstanding_tasks': []}),
-                        status=200,
-                        mimetype='application/json')
