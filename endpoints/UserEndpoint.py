@@ -31,7 +31,7 @@ def get_identity():
                         mimetype='application/json')
 
     g.user = user
-    return 
+    return
 
 
 @user_ep.route("/", methods=["GET"])
@@ -57,23 +57,27 @@ def update_user():
         return Response(status=405)
 
     if g.user == None:
+        print('[!] Unknown user')
         return Response(response=json.dumps({'error': 'Invalid token'}),
                         status=401,
                         mimetype='application/json')
 
     data = request.get_json()
     if data is None:
+        print('[!] No data provided')
         return Response(response=json.dumps({'error': 'No json data'}),
                         status=400,
                         mimetype='application/json')
 
     for key in data:
-        if key != 'email' and key not in g.user.to_json().keys():
-            return Response(response=json.dumps({'error': 'Invalid field'}),
-                            status=400,
-                            mimetype='application/json')
+        if key == 'email' or key == 'auth_token' or key == 'token_expiration' or key == 'created_at' or key == 'updated_at' or key not in g.user.to_json().keys():
+            print(f'[!] Will not update {key} from this endpoint')
+            pass
+        else:
+            g.user.__setattr__(key, data[key])
 
     g.user.update(data)
+    g.user.commit()
 
     return Response(
         response=json.dumps({'success': 'User data  updated',
@@ -101,4 +105,3 @@ def delete_user():
     return Response(response=json.dumps({'success': 'User deleted'}),
                     status=200,
                     mimetype='application/json')
-

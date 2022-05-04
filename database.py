@@ -30,7 +30,9 @@ class UserAccount(db.Model):
     privacy_setting = db.Column(db.String(120), default='public')
 
     education_level = db.Column(db.String(50), nullable=False)
-
+    education_major = db.Column(db.String(50), nullable=True)
+    education_institution = db.Column(db.String(50), nullable=True)
+    
     # Employer fields
     organization_name = db.Column(db.String(120), nullable=True)
     years_in_business = db.Column(db.String(2), nullable=True)
