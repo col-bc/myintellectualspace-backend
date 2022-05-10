@@ -69,16 +69,16 @@ def update_user():
                         status=400,
                         mimetype='application/json')
 
+    new_user_data = g.user.to_json()
+
     for key in data:
         if key == 'email' or key == 'auth_token' or key == 'token_expiration' or key == 'created_at' or key == 'updated_at' or key not in g.user.to_json().keys():
             print(f'[!] Will not update {key} from this endpoint')
             pass
         else:
-            g.user.__setattr__(key, data[key])
-
-    g.user.update(data)
-    g.user.commit()
-
+            new_user_data[key] = data[key]
+    g.user.update(new_user_data)
+    db.session.commit()
     return Response(
         response=json.dumps({'success': 'User data  updated',
                              'user': g.user.to_json()}),
@@ -100,7 +100,7 @@ def delete_user():
                         mimetype='application/json')
 
     db.session.delete(g.user)
-    db.commit()
+    db.session.commit()
     g.user = None
     return Response(response=json.dumps({'success': 'User deleted'}),
                     status=200,

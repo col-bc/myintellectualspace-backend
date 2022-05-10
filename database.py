@@ -32,7 +32,7 @@ class UserAccount(db.Model):
     education_level = db.Column(db.String(50), nullable=False)
     education_major = db.Column(db.String(50), nullable=True)
     education_institution = db.Column(db.String(50), nullable=True)
-    
+
     # Employer fields
     organization_name = db.Column(db.String(120), nullable=True)
     years_in_business = db.Column(db.String(2), nullable=True)
@@ -42,7 +42,7 @@ class UserAccount(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False)
 
     def __init__(
-        self, first_name, last_name, email, password_hash, education_level, account_type
+        self, first_name, last_name, email, password_hash, education_level, account_type,
     ):
         self.first_name = first_name
         self.last_name = last_name
@@ -60,56 +60,44 @@ class UserAccount(db.Model):
     def to_json(self) -> dict:
         '''Returns a dictionary representation of the UserAccount object.'''
         return {
-            "id": self.id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "email": self.email,
-            "bio": self.bio,
-            "website": self.website,
-            "posts_ids": self.posts_ids,
-            "comment_ids": self.comment_ids,
-            "interests": self.interests,
-            "friend_ids": self.friend_ids,
-            "privacy_setting": self.privacy_setting,
-            "education_level": self.education_level,
-            "organization_name": self.organization_name,
-            "years_in_business": self.years_in_business,
-            "account_type": self.account_type,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "auth_token": self.auth_token,
-            "token_expiration": self.token_expiration.strftime("%Y-%m-%d %H:%M:%S"),
-            "occupation": self.occupation,
-            "location": self.location,
+            'id': self.id,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'occupation': self.occupation,
+            'email': self.email,
+            'password_hash': self.password_hash,
+            'auth_token': self.auth_token,
+            'token_expiration': self.token_expiration.strftime('%Y-%m-%d %H:%M:%S'),
+            'location': self.location,
+            'bio': self.bio,
+            'website': self.website,
+            'posts_ids': self.posts_ids,
+            'comment_ids': self.comment_ids,
+            'interests': self.interests,
+            'friend_ids': self.friend_ids,
+            'privacy_setting': self.privacy_setting,
+            'education_level': self.education_level,
+            'education_major': self.education_major,
+            'education_institution': self.education_institution,
+            'organization_name': self.organization_name,
+            'years_in_business': self.years_in_business,
+            'account_type': self.account_type,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
         }
 
     def update(self, data: dict):
         '''Updates the UserAccount object with the provided data.'''
         for key, value in data.items():
-            if key == "password_hash":
-                self.password_hash = value
-            elif key == "bio":
-                self.bio = value
-            elif key == "website":
-                self.website = value
-            elif key == "interests":
-                self.interests = value
-            elif key == "privacy_setting":
-                self.privacy_setting = value
-            elif key == "education_level":
-                self.education_level = value
-            elif key == "organization_name":
-                self.organization_name = value
-            elif key == "years_in_business":
-                self.years_in_business = value
-            elif key == "account_type":
-                self.account_type = value
-            elif key == "occupation":
-                self.occupation = value
-            elif key == "first_name":
-                self.first_name = value
-            elif key == "last_name":
-                self.last_name = value
+            if key == 'token_expiration':
+                self.token_expiration = datetime.strptime(
+                    value, '%Y-%m-%d %H:%M:%S')
+            elif key == 'created_at':
+                self.created_at = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            elif key == 'updated_at':
+                self.updated_at = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            else:
+                setattr(self, key, value)
         db.session.commit()
         return
 

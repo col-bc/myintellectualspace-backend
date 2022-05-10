@@ -5,7 +5,7 @@ from flask_migrate import Migrate
 from database import db
 from endpoints.AuthEndpoint import auth_ep
 from endpoints.UserEndpoint import user_ep
-
+from endpoints.MeetingsEndpoint import meetings_ep
 
 def create_app():
     app = Flask(__name__)
@@ -32,6 +32,7 @@ def setup_migrate(app, db):
 def register_blueprints(app):
     app.register_blueprint(auth_ep)
     app.register_blueprint(user_ep)
+    app.register_blueprint(meetings_ep)
 
 
 def setup_database(app):
