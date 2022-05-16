@@ -1,3 +1,4 @@
 ./test/**/*
 database.db
 app_secrets.py
+database.db
