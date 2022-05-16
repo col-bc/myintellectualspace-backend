@@ -1,7 +1,7 @@
 from datetime import datetime
-from flask_cors import CORS
-from flask import Blueprint, request, Response, g
 import json
+from flask_cors import CORS
+from flask import Blueprint, request, g, jsonify
 from database import db, UserAccount
 import bcrypt
 
@@ -17,38 +17,23 @@ def register():
     '''
     if request.method != 'POST':
         print('[!] Invalid request method')
-        return Response(
-            response=json.dumps({'error': 'Method not allowed'}),
-            status=405,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Method not allowed'}), 405
+        
     data = request.get_json()
     print(data)
 
     if not data:
         print('[!] Invalid request body')
-        return Response(
-            response=json.dumps({'error': 'Invalid data'}),
-            status=400,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Invalid data'}),400
 
     if not data.get('email') or not data.get('password') or not data.get('first_name') or not data.get('last_name') or not data.get('education_level') or not data.get('profile_type'):
         print('[!] Invalid request body')
-        return Response(
-            response=json.dumps({'error': 'Missing data'}),
-            status=400,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Missing data'}), 400
 
     user = UserAccount.query.filter_by(email=data.get('email').lower()).first()
     if user:
         print('[!] User already exists')
-        return Response(
-            response=json.dumps({'error': 'User already exists'}),
-            status=400,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'User already exists'}), 400
 
     pw_hash = bcrypt.hashpw(
         data.get('password').encode('utf-8'), bcrypt.gensalt())
@@ -68,11 +53,7 @@ def register():
     db.session.commit()
 
     print('[+] User created')
-    return Response(
-        response=json.dumps({'success': 'User created'}),
-        status=201,
-        mimetype='application/json'
-    )
+    return jsonify({'success': 'User created'}), 201
 
 
 @auth_ep.route('/login', methods=['POST'])
@@ -83,59 +64,65 @@ def login():
     '''
     if request.method != 'POST':
         print('[!] Invalid request method')
-        return Response(
-            response=json.dumps({'error': 'Method not allowed'}),
-            status=405,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Method not allowed'}), 405
+    
     data = request.get_json()
-
     if not data:
         print('[!] Invalid request body')
-        return Response(
-            response=json.dumps({'error': 'Invalid data'}),
-            status=400,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Invalid data'}), 400
 
+    
     if not data.get('email') or not data.get('password'):
         print('[!] Invalid request body')
-        return Response(
-            response=json.dumps({'error': 'Missing data'}),
-            status=400,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Missing data'}), 400
 
     user = UserAccount.query.filter_by(email=data.get('email').lower()).first()
 
     if not user:
         print('[!] User does not exist')
-        return Response(
-            response=json.dumps({'error': 'Invalid credentials'}),
-            status=401,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Invalid credentials'}), 401
 
     if not user.check_password(data.get('password')):
         print('[!] Invalid password')
-        return Response(
-            response=json.dumps({'error': 'Invalid credentials'}),
-            status=401,
-            mimetype='application/json'
-        )
+        return jsonify({'error': 'Invalid credentials'}), 401
 
     user.auth_token = user.generate_auth_token()
 
     print(f'[+] User logged in: {user}')
-    return Response(
-        response=json.dumps(
-            {'success': 'User logged in', 'token': user.auth_token}),
-        status=200,
-        mimetype='application/json'
-    )
+    return jsonify({'success': 'User logged in', 'token': user.auth_token}), 200
 
 
+@auth_ep.route('/logout', methods=['POST'])
+def logout():
+    '''
+    `/api/auth/logout`
+    Clears token from database
+    '''
+    if request.method != 'POST':
+        return jsonify({'message': 'Method not allowed'}), 405
+    
+    if not 'Authorization' in request.headers:
+        return jsonify({'message': 'Authorization is missing.'}), 401
+    token = request.headers['Authorization'].split(' ')[1]
+    if not token:
+        return jsonify({'message': 'Token is missing'}), 401
+    
+    user = UserAccount.query.filter_by(token=token).first()
+    if not user:
+        return jsonify({'message': 'Invalid token'}), 401
+    user.auth_token = None
+    user.token_expiration = None
+    user.updated_at = datetime.now()
+    return jsonify({'message': 'Logged out'}), 200
+
+
+@staticmethod
 def get_user_by_token(token) -> UserAccount:
+    '''
+    @params token: str
+    @returns UserAccount
+    Gets user account object from token
+    '''
     user = UserAccount.query.filter_by(auth_token=token).first()
     if not user:
         print('[!] Invalid token')
