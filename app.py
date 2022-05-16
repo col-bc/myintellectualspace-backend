@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -11,7 +13,9 @@ def create_app():
     app = Flask(__name__)
     app.config['DEBUG'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/colby/Code/myintellectualspace-back/database.db'
+    app.config[
+        "SQLALCHEMY_DATABASE_URI"
+    ] = f'sqlite:///{os.path.join(os.getcwd(), "database.db")}'
     register_extensions(app)
     register_blueprints(app)
     return app
@@ -21,7 +25,6 @@ def register_extensions(app):
     db.init_app(app)
     cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
     cors.init_app(app)
-    migrate = Migrate(app, db)
 
 
 def setup_migrate(app, db):
@@ -42,6 +45,8 @@ def setup_database(app):
 
 
 if __name__ == '__main__':
+    os.environ['FLASK_ENV'] = 'development'
+    
     app = create_app()
     setup_database(app)
     migrate = setup_migrate(app, db)
