@@ -1,4 +1,4 @@
-from flask import Blueprint, request, Response, g
+from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
 from database import db
 from .AuthEndpoint import get_user_by_token
@@ -13,22 +13,20 @@ CORS(user_ep)
 @user_ep.before_request
 def get_identity():
     if request.method == 'OPTIONS':
-        return Response(status=202)
+        return jsonify({'ok': 'ok'}), 204
 
     if request.method == 'GET' or request.method == 'POST':
         user = None
 
     if 'Authorization' not in request.headers:
-        return Response(status=401)
+        return jsonify({'error': 'Missing authorization header'}), 401
 
     token = request.headers['Authorization'].split(' ')[1]
     user = get_user_by_token(token)
 
     if user is None:
         g.user = None
-        return Response(response=json.dumps({'error': 'Invalid token'}),
-                        status=401,
-                        mimetype='application/json')
+        return jsonify({'error': 'Invalid token'}), 401
 
     g.user = user
     return
@@ -38,36 +36,21 @@ def get_identity():
 def get_user():
     '''Returns the user object for the currently logged in user.'''
     if request.method != 'GET':
-        return Response(status=405)
+        return jsonify({'error': 'Method not allowed'}), 405
 
-    if g.user is None:
-        return Response(response=json.dumps({'error': 'Invalid token'}),
-                        status=401,
-                        mimetype='application/json')
-
-    return Response(response=json.dumps(g.user.to_json()),
-                    status=200,
-                    mimetype='application/json')
+    return jsonify(g.user.to_json()), 200
 
 
 @user_ep.route("/update", methods=["POST"])
 def update_user():
     '''Updates the user object for the currently logged in user.'''
     if request.method != 'POST':
-        return Response(status=405)
-
-    if g.user == None:
-        print('[!] Unknown user')
-        return Response(response=json.dumps({'error': 'Invalid token'}),
-                        status=401,
-                        mimetype='application/json')
+        return jsonify({'error': 'Method not allowed'}), 405
 
     data = request.get_json()
     if data is None:
         print('[!] No data provided')
-        return Response(response=json.dumps({'error': 'No json data'}),
-                        status=400,
-                        mimetype='application/json')
+        return jsonify({'error': 'No json data'}), 400
 
     new_user_data = g.user.to_json()
 
@@ -79,29 +62,16 @@ def update_user():
             new_user_data[key] = data[key]
     g.user.update(new_user_data)
     db.session.commit()
-    return Response(
-        response=json.dumps({'success': 'User data  updated',
-                             'user': g.user.to_json()}),
-        status=200,
-        mimetype='application/json')
+    return jsonify({'success': 'User data  updated',
+                             'user': g.user.to_json()}), 200
 
 
 @user_ep.route("/delete", methods=["DELETE"])
 def delete_user():
     if request.method != 'DELETE':
-        return Response(status=405)
-
-    if g.user is None:
-        return Response(status=401)
-
-    if g.user.account_type != 'admin':
-        return Response(response=json.dumps({'error': 'Not authorized'}),
-                        status=401,
-                        mimetype='application/json')
+        return jsonify({'error': 'Method not allowed'}), 405
 
     db.session.delete(g.user)
     db.session.commit()
     g.user = None
-    return Response(response=json.dumps({'success': 'User deleted'}),
-                    status=200,
-                    mimetype='application/json')
+    return jsonify({'success': 'User deleted'}), 200

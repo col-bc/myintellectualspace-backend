@@ -1,9 +1,9 @@
 from datetime import datetime
-import json
-from flask_cors import CORS
-from flask import Blueprint, request, g, jsonify
-from database import db, UserAccount
+
 import bcrypt
+from database import UserAccount, db
+from flask import Blueprint, g, jsonify, request
+from flask_cors import CORS
 
 auth_ep = Blueprint('auth_ep', __name__, url_prefix='/api/auth')
 CORS(auth_ep)
@@ -112,11 +112,9 @@ def logout():
         return jsonify({'message': 'Invalid token'}), 401
     user.auth_token = None
     user.token_expiration = None
-    user.updated_at = datetime.now()
     return jsonify({'message': 'Logged out'}), 200
 
 
-@staticmethod
 def get_user_by_token(token) -> UserAccount:
     '''
     @params token: str

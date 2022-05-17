@@ -1,9 +1,8 @@
 import datetime
-import json
-from flask import Blueprint, request, Response, g
+
 import jwt
 from app_secrets import VIDEOSDK_API_KEY, VIDEOSDK_API_SECRET
-from database import db
+from flask import Blueprint, g, jsonify, request
 from flask_cors import CORS
 
 from endpoints.AuthEndpoint import get_user_by_token
@@ -15,13 +14,13 @@ CORS(meetings_ep)
 @meetings_ep.before_request
 def get_identity():
     if request.method == 'OPTIONS':
-        return Response(status=202)
+        return jsonify('ok'), 204
 
     if request.method == 'GET' or request.method == 'POST':
         user = None
 
     if 'Authorization' not in request.headers:
-        return Response(status=401)
+        return jsonify({'error': 'Missing authorization header'}), 401
 
     token = request.headers['Authorization'].split(' ')[1]
     user = get_user_by_token(token)
@@ -29,9 +28,7 @@ def get_identity():
     if user is None:
         print(f'User not found with token {token}')
         g.user = None
-        return Response(response=json.dumps({'error': 'Invalid token'}),
-                        status=401,
-                        mimetype='application/json')
+        return jsonify({'error': 'Invalid token'}), 401
 
     g.user = user
     return
@@ -40,22 +37,28 @@ def get_identity():
 @meetings_ep.route("/jwt", methods=["GET"])
 def create_meeting():
     if request.method != 'GET':
-        return Response(status=405)
+        return jsonify({'error': 'Method not allowed'}), 405
+
+    if not g.user:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    payload = {
+        'iss': VIDEOSDK_API_KEY,
+        'sub': g.user.id,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=60),
+        'iat': datetime.datetime.utcnow()
+    }
+
+    token = jwt.encode(payload, VIDEOSDK_API_SECRET, algorithm='HS256')
+    return jsonify({'token': token.decode('UTF-8')}), 200
 
     if g.user is None:
-        return Response(response=json.dumps({'error': 'Invalid token'}),
-                        status=401,
-                        mimetype='application/json')
+        return jsonify({'error': 'Invalid token'}), 401
 
-    expires = 24 * 3600
-    now = datetime.datetime.utcnow()
-    exp = now + datetime.timedelta(seconds=expires)
     token = jwt.encode(
         algorithm='HS256',
         payload={'apikey': VIDEOSDK_API_KEY},
         key=VIDEOSDK_API_SECRET)
 
-    print(token, type(token))
-    return Response(response=json.dumps({'token': token}),
-                    content_type='application/json',
-                    status=200)
+    print(f'[*] Generated JWT token: <JWT {token[:3]}...{token[-4:]}>')
+    return jsonify({'token': token}), 200
