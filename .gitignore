@@ -3,3 +3,4 @@ database.db
 app_secrets.py
 database.db
 .vscode/settings.json
+database.db
