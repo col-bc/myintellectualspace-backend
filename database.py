@@ -1,6 +1,8 @@
+import json
+import jwt
+from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-from secrets import token_hex
 from bcrypt import checkpw
 
 db = SQLAlchemy()
@@ -8,21 +10,22 @@ db = SQLAlchemy()
 
 class UserAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    avatar_uri = db.Column(db.String(256), nullable=True, default=None)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
-    occupation = db.Column(db.String(50), nullable=True)
+    handle = db.Column(db.String(50), nullable=False, default=None)
 
+    occupation = db.Column(db.String(50), nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    auth_token = db.Column(db.String(120), unique=True, nullable=True)
-    token_expiration = db.Column(db.DateTime, nullable=True)
+    password_hash = db.Column(db.Text, nullable=False)
+    reset_token = db.Column(db.String(120), unique=True, nullable=True)
+    reset_token_expiration = db.Column(db.DateTime, nullable=True)
     location = db.Column(db.String(50), nullable=True)
 
-    bio = db.Column(db.String(500), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
     website = db.Column(db.String(120), nullable=True)
 
-    posts_ids = db.Column(db.String(120), default='[]')
-    comment_ids = db.Column(db.String(120), default='[]')
+    posts_ids = db.Column(db.Text, default='[]')
     interests = db.Column(db.String(120), default='[]')
     friend_ids = db.Column(db.String(120), default='[]')
 
@@ -42,10 +45,18 @@ class UserAccount(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False)
 
     def __init__(
-        self, first_name, last_name, email, password_hash, education_level, account_type,
+        self,
+        first_name,
+        last_name,
+        handle,
+        email,
+        password_hash,
+        education_level,
+        account_type,
     ):
         self.first_name = first_name
         self.last_name = last_name
+        self.handle = handle
         self.email = email
         self.password_hash = password_hash
         self.education_level = education_level
@@ -61,18 +72,18 @@ class UserAccount(db.Model):
         '''Returns a dictionary representation of the UserAccount object.'''
         return {
             'id': self.id,
+            'avatar_uri': self.avatar_uri,
             'first_name': self.first_name,
             'last_name': self.last_name,
+            'handle': self.handle,
             'occupation': self.occupation,
             'email': self.email,
-            'password_hash': self.password_hash,
-            'auth_token': self.auth_token,
-            'token_expiration': self.token_expiration.strftime('%Y-%m-%d %H:%M:%S'),
+            'reset_token': self.reset_token,
+            'reset_token_expiration': self.reset_token_expiration,
             'location': self.location,
             'bio': self.bio,
             'website': self.website,
             'posts_ids': self.posts_ids,
-            'comment_ids': self.comment_ids,
             'interests': self.interests,
             'friend_ids': self.friend_ids,
             'privacy_setting': self.privacy_setting,
@@ -89,10 +100,7 @@ class UserAccount(db.Model):
     def update(self, data: dict):
         '''Updates the UserAccount object with the provided data.'''
         for key, value in data.items():
-            if key == 'token_expiration':
-                self.token_expiration = datetime.strptime(
-                    value, '%Y-%m-%d %H:%M:%S')
-            elif key == 'created_at':
+            if key == 'created_at':
                 self.created_at = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             elif key == 'updated_at':
                 self.updated_at = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
@@ -103,18 +111,7 @@ class UserAccount(db.Model):
 
     def check_password(self, hash) -> bool:
         '''Returns `True` if the provided password hash matches the password hash in the database.'''
-        return checkpw(hash.encode('utf-8'), self.password_hash.encode('utf-8'))
-
-    def generate_auth_token(self) -> str:
-        '''Generates a hexadecimal token for the user.'''
-        self.auth_token = token_hex(64)
-        self.token_expiration = datetime.now() + timedelta(days=1)
-        self.save()
-        return self.auth_token
-
-    def check_token(self, token) -> bool:
-        '''Returns `True` if the provided token matches the token in the database and the token is not expired.'''
-        return self.auth_token == token and self.token_expiration > datetime.now()
+        return checkpw(hash.encode('utf-8'), self.password_hash)
 
     def add_friend(self, friend_id):
         '''Adds a friend to the list of friends.'''
@@ -184,23 +181,25 @@ class UserAccount(db.Model):
 class PostModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    title = db.Column(db.String(120), nullable=False)
-    body = db.Column(db.String(120), nullable=False)
+    content = db.Column(db.String(120), nullable=False)
 
-    owner_id = db.Column(db.Integer, db.ForeignKey(
-        'user_account.id'), nullable=False)
+    location = db.Column(db.String(120), nullable=True)
+    image_uri = db.Column(db.String(120), nullable=True)
 
-    liked_by = db.Column(db.String(120), nullable=False)
-    comment_ids = db.Column(db.String(120), nullable=False)
+    owner_id = db.Column(db.Integer,
+                         db.ForeignKey('user_account.id'),
+                         nullable=False)
+
+    liked_by = db.Column(db.Text, nullable=False, default='[]')
+    comments = db.Column(db.JSON, nullable=False, default='{}')
 
     created_at = db.Column(db.DateTime, nullable=False)
 
-    def __init__(self, title, body, owner_id, liked_by, comment_ids):
-        self.title = title
-        self.body = body
+    def __init__(self, content, owner_id, location=None, image_uri=None):
+        self.content = content
         self.owner_id = owner_id
-        self.liked_by = liked_by
-        self.comment_ids = comment_ids
+        self.location = location
+        self.image_uri = image_uri
         self.created_at = datetime.now()
 
     def __repr__(self):
@@ -212,13 +211,29 @@ class PostModel(db.Model):
     def to_json(self) -> dict:
         '''Returns a dictionary representation of the PostModel object.'''
         return {
-            'id': self.id,
-            'title': self.title,
-            'body': self.body,
-            'owner_id': self.owner_id,
-            'liked_by': self.liked_by,
-            'comment_ids': self.comment_ids,
-            'created_at': self.created_at
+            'id':
+            self.id,
+            'content':
+            self.content,
+            'location':
+            self.location,
+            'image_uri':
+            self.image_uri,
+            'owner_id':
+            self.owner_id,
+            'owner_avatar':
+            UserAccount.query.get(self.owner_id).avatar_uri,
+            'owner_name':
+            UserAccount.query.get(self.owner_id).first_name + ' ' +
+            UserAccount.query.get(self.owner_id).last_name,
+            'owner_handle':
+            UserAccount.query.get(self.owner_id).handle,
+            'liked_by':
+            self.liked_by,
+            'comments':
+            self.comments,
+            'created_at':
+            self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         }
 
     def get_user(self) -> UserAccount:
@@ -230,17 +245,20 @@ class PostModel(db.Model):
             self.liked_by = self.liked_by + ',' + user_id
             self.save()
 
-    def add_comment(self, comment_id) -> None:
-        '''Appends a comment_id to the comment_ids field.'''
-        if comment_id not in self.comment_ids:
-            self.comment_ids = self.comment_ids + ',' + comment_id
-            self.save()
+    def add_comment(self, user_id: int, comment: str) -> None:
+        '''Appends a json object to the comments field.'''
+        self.comments = self.comments + ',' + json.dumps({
+            'user_id': user_id,
+            'comment': comment,
+        })
+        self.save()
 
     def save(self) -> None:
-        '''Saves the PostModel object to the database.'''
+        '''Saves the current PostModel object (`self`) to the database.'''
         db.session.add(self)
         db.session.commit()
 
     def delete(self) -> None:
+        '''Deletes the current PostModel object (`self`) from the database.'''
         db.session.delete(self)
         db.session.commit()
